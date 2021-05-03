@@ -1,0 +1,83 @@
+diff --git a/lib/lirc_node.js b/lib/lirc_node.js
+index edfd946..0772d30 100644
+--- a/lib/lirc_node.js
++++ b/lib/lirc_node.js
+@@ -1,4 +1,5 @@
+-exports.version = '0.0.2';
++exports.version = '0.1.0';
++
+ exports.IRSend = require('./irsend');
+ exports.irsend = new exports.IRSend();
+ exports.remotes = {};
+@@ -19,9 +20,9 @@ exports.init = function(callback) {
+   exports.irsend.list('', '', irsendCallback);
+ 
+   function irsendCallback(error, stdout, stderr) {
+-    exports._populateRemotes(error, stdout, stderr);
+-    exports._populateCommands();
+-    if (callback) callback();
++    exports._populateRemotes(error, stdout, stderr)
++      .then(exports._populateCommands)
++      .then(() => { if (callback) callback(); });
+   }
+ 
+   return true;
+@@ -29,31 +30,44 @@ exports.init = function(callback) {
+ 
+ // Private
+ exports._populateRemotes = function(error, stdout, stderr) {
+-  var remotes = stderr.split('\n');
++  return new Promise((resolve, reject) => {
++    var remotes = stdout.split('\n');
++
++    exports.remotes = {};
+ 
+-  exports.remotes = {};
++    remotes.forEach(function(element, index, array) {
++      var remoteName = element;
++      if (remoteName) exports.remotes[remoteName] = [];
+ 
+-  remotes.forEach(function(element, index, array) {
+-    var remoteName = element.match(/\s(.*)$/);
+-    if (remoteName) exports.remotes[remoteName[1]] = [];
++      if (index === remotes.length - 1) resolve();
++    });
+   });
+ };
+ 
+ exports._populateCommands = function() {
+-  for (var remote in exports.remotes) {
+-    (function(remote) {
++  return new Promise((resolve, reject) => {
++    var remotes = exports.remotes;
++    Object.keys(remotes).forEach(function(remote, index, array) {
+       exports.irsend.list(remote, '', function(error, stdout, stderr) {
+-        exports._populateRemoteCommands(remote, error, stdout, stderr);
++        exports._populateRemoteCommands(remote, error, stdout, stderr)
++          .then(() => {
++            if (index === Object.keys(remotes).length - 1) resolve()
++          });
+       });
+-    })(remote);
+-  }
++    });
++  });
+ };
+ 
+ exports._populateRemoteCommands = function(remote, error, stdout, stderr) {
+-  var commands = stderr.split('\n');
++  return new Promise((resolve, reject) => {
++    var commands = stdout.split('\n');
++    commands.forEach(function(element, index, array) {
++      if (element)  {
++        var commandName = element.split(' ')[1];
++        exports.remotes[remote].push(commandName);
++      }
+ 
+-  commands.forEach(function(element, index, array) {
+-    var commandName = element.match(/\s.*\s(.*)$/);
+-    if (commandName && commandName[1]) exports.remotes[remote].push(commandName[1]);
++      if (index === commands.length - 1) resolve();
++    });
+   });
+ };

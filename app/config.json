@@ -1,0 +1,7 @@
+{
+  "server" : {
+    "port" : 3000,
+    "ssl" : false
+  },
+  "socket" : "/run/lirc/lircd"
+}
