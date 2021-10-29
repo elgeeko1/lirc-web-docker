@@ -1,14 +1,14 @@
 # why ubuntu:groovy and not node:alpine?
 # cause alpine in docker don't play good with ipv6
 # and apk will hang when its fetch returns dual-stack.
-FROM ubuntu:groovy
+FROM ubuntu:20.04
 LABEL maintainer="https://github.com/elgeeko1"
 
 EXPOSE 3000
 
 USER root
 
-ARG TIMEZONE=US/Los_Angeles
+ARG TIMEZONE=America/Los_Angeles
 ENV LIRC_WEB_APP_PATH=/opt/lirc-web
 ENV LIRC_WEB_NODE_PATH=${LIRC_WEB_APP_PATH}/node_modules/lirc_web
 ENV CONTAINER_USER=lirc_web
@@ -34,8 +34,7 @@ RUN echo "${TIMEZONE}" > /etc/timezone
 # install patch to apply patchfile
 # install curl for docker healthcheck
 RUN apt-get update -q \
-  && apt-get -q -y -o "DPkg::Options::=--force-confold" -o "DPkg::Options::=--force-confdef" install --upgrade --no-install-recommends lirc nodejs npm patch curl \
-  && apt-get -q -y autoremove \
+  && apt-get -q -y install --upgrade --no-install-recommends lirc nodejs npm patch curl \
   && apt-get -q -y clean \
   && rm -rf /var/lib/apt/lists/*
 
